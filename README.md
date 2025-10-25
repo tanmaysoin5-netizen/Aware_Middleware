@@ -20,3 +20,24 @@ node server.js
 Browser: http://localhost:3000
 Terminal: curl http://localhost:3000/stream
 
+
+## Task 2: Content Negotiation Middleware (JSON vs XML)
+
+###  Goal
+Create a reusable Express middleware that returns JSON or XML depending on the `Accept` header.
+
+### Features
+- Global `negotiate` middleware
+- Supports `application/json` and `application/xml`
+- Automatically sets `Content-Type`
+- Works with arrays and objects
+
+###  Run
+```bash
+node server.js
+```
+## test 
+http://localhost:3000/data
+
+## XML 
+curl -H "Accept: application/xml" http://localhost:3000/data

@@ -2,52 +2,69 @@
 const express = require('express');
 const { Readable } = require('stream');
 const abortAware = require('./middleware/abortAware');
+const negotiate = require('./middleware/negotiate');
 
 const app = express();
 const PORT = 3000;
 
-// Middleware to handle abort signals
-app.use(abortAware);
+// Apply negotiate middleware globally
+app.use(negotiate);
 
-// NDJSON streaming endpoint
-app.get('/stream', async (req, res) => {
+// ----------------------
+// Task 1: NDJSON Stream
+// ----------------------
+app.get('/stream', abortAware, async (req, res) => {
   res.setHeader('Content-Type', 'application/x-ndjson');
 
-  // Create a readable stream that sends data gradually
   const stream = new Readable({
     async read() {
       for (let i = 0; i < 10; i++) {
         if (req.clientAborted) {
           console.log('🛑 Client aborted streaming');
-          this.push(null); // end stream
+          this.push(null);
           return;
         }
-
         const obj = { id: i, message: 'Streaming data...', time: new Date().toISOString() };
         this.push(JSON.stringify(obj) + '\n');
-
-        await new Promise(r => setTimeout(r, 500)); // delay to simulate streaming
+        await new Promise((r) => setTimeout(r, 500));
       }
       this.push(null);
-    }
+    },
   });
 
   stream.pipe(res);
 });
 
-// Root route to show info
+// ----------------------
+// Task 2: Negotiation
+// ----------------------
+app.get('/data', (req, res) => {
+  const data = {
+    message: 'Hello from content negotiation middleware!',
+    author: 'Tanmay',
+    timestamp: new Date().toISOString(),
+  };
+  res.formatResponse(data);
+});
+
+// ----------------------
+// Root page
+// ----------------------
 app.get('/', (req, res) => {
   res.send(`
-    <h2>✅ Task 1: Streaming + Abort Middleware</h2>
-    <p>Use these endpoints:</p>
+    <h2>✅ Middleware Tasks</h2>
     <ul>
-      <li><a href="/stream">/stream</a> – NDJSON streaming</li>
+      <li><a href="/stream">Task 1 – NDJSON Stream</a></li>
+      <li><a href="/data">Task 2 – JSON/XML Negotiation</a></li>
     </ul>
-    <p>Best viewed with <code>curl http://localhost:${PORT}/stream</code></p>
+    <p>Test XML with curl:</p>
+    <pre><code>curl -H "Accept: application/xml" http://localhost:${PORT}/data</code></pre>
   `);
 });
 
+// ----------------------
 // Start server
+// ----------------------
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
